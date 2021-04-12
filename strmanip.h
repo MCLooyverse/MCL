@@ -1,0 +1,325 @@
+#ifndef MCL_STRING_MANIPULATION_H
+#define MCL_STRING_MANIPULATION_H
+
+#include <string>
+#include "typedefs.h"
+#include <vector>
+#include <stdexcept>
+
+
+namespace mcl
+{
+	namespace strmanip_consts
+	{
+		constexpr const char digits[] = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+		constexpr const char whitespace[] = " \r\n\t";
+	}
+
+	enum charClass {
+		control,
+		whitespace,
+		punctuation,
+		digit,
+		uppercase,
+		lowercase,
+		extended
+	};
+
+	enum smerr {
+		invalidBase
+	};
+
+	template <typename N> std::string NtoS(N, usint = 10, uint = 0, bool = 0);
+
+
+	template <typename N> size_t SintoN (
+		std::string::const_iterator&,
+		const std::string::const_iterator&,
+		N&, usint = 10, bool = 0);
+	template <typename Z> size_t SintoI (
+		std::string::const_iterator&,
+		const std::string::const_iterator&,
+		Z&, usint = 10, bool = 0);
+
+	template <typename N> N StoN(const std::string&, usint = 10, bool = 0);
+	template <typename Z> Z StoI(const std::string&, usint = 10, bool = 0);
+
+
+	namespace rseximal {
+		template <typename N> std::string NtoS(N n, uint m = 0)
+		{ return mcl::NtoS(n, 6, m, 1); }
+
+		template <typename N> size_t SintoN (
+			std::string::const_iterator& i,
+			const std::string::const_iterator& e,
+			N& n)
+		{ return mcl::SintoN(i, e, n, 6, 1); }
+		template <typename Z> size_t SintoI (
+			std::string::const_iterator& i,
+			const std::string::const_iterator& e,
+			Z& z)
+		{ return mcl::SintoI(i, e, z, 6, 1); }
+
+		template <typename N> N StoN(const std::string& s)
+		{ return mcl::StoN(s, 6, 1); }
+		template <typename Z> Z StoI(const std::string& s)
+		{ return mcl::StoI(s, 6, 1); }
+	}
+
+
+	charClass getCClass(char);
+	bool isCntrl(char);
+	bool isWhite(char);
+	bool isPunct(char);
+	bool isDigit(char);
+	bool isUpper(char);
+	bool isLower(char);
+	bool isAlpha(char);
+	bool isAlphaNum(char);
+
+	bool isCntrl(const std::string::const_iterator& i) { return isCntrl(*i); }
+	bool isWhite(const std::string::const_iterator& i) { return isWhite(*i); }
+	bool isPunct(const std::string::const_iterator& i) { return isPunct(*i); }
+	bool isDigit(const std::string::const_iterator& i) { return isDigit(*i); }
+	bool isUpper(const std::string::const_iterator& i) { return isUpper(*i); }
+	bool isLower(const std::string::const_iterator& i) { return isLower(*i); }
+	bool isAlpha(const std::string::const_iterator& i) { return isAlpha(*i); }
+	bool isAlphaNum(const std::string::const_iterator& i) { return isAlphaNum(*i); }	
+	
+	size_t isCntrl(const std::string&);
+	size_t isWhite(const std::string&);
+	size_t isPunct(const std::string&);
+	size_t isDigit(const std::string&);
+	size_t isUpper(const std::string&);
+	size_t isLower(const std::string&);
+	size_t isAlpha(const std::string&);
+	size_t isAlphaNum(const std::string&);
+
+	//Returns true if there exists `c :: std::string`
+	//such that `a == b + c` or `a + c == b`,
+	//false otherwise
+	bool extends(const std::string& a, const std::string& b);
+	size_t find(char, const std::string&);
+
+
+	void trimFront(std::string&);
+	std::string trimmedFront(const std::string& s)
+	{ auto t = s; trimFront(t); return t; }
+	void trimBack(std::string&);
+	std::string trimmedBack(const std::string& s)
+	{ auto t = s; trimBack(t); return t; }
+	void trim(std::string& s)
+	{ trimFront(s); trimBack(s); }
+	std::string trimmed(const std::string& s)
+	{ auto t = s; trim(t); return t; }
+
+
+
+	std::vector<std::string> split(std::string s, char delim = '\n', bool include = 0);
+
+
+
+
+
+
+
+
+
+	  //=============//
+	 // DEFINITIONS //
+	//=============//
+
+	template <typename N>
+	std::string NtoS(N n, usint b, uint m, bool r)
+	{
+		if (!(2 <= b && b < 37))
+			throw std::domain_error("mcl::NtoS: argument `b` must be between 2 and 36");
+		using namespace strmanip_consts;
+
+		if (!n)
+			return std::string(m + !m, '0');
+		
+		std::string out{""};
+		if (r)
+		{
+			while (n)
+			{
+				out += digits[n % b];
+				n /= b;
+			}
+
+			if (out.length() < m)
+				out.append(m - out.length(), '0');
+		}
+		else
+		{
+			N p = 1;
+			while (p <= n)
+				p *= b;
+
+			while (p > 1)
+			{
+				p /= b;
+				out += digits[n / p];
+				n %= p;
+			}
+
+			if (out.length() < m)
+				out.insert(0, m - out.length(), '0');
+		}
+
+		return out;		
+	}
+
+	template <typename N> N StoN(const std::string& s, usint b, bool r)
+	{
+		if (!(2 <= b && b < 37))
+			throw std::domain_error("[mcl::StoN] (unsigned short int)b must be between 2 and 36.");
+		
+		auto reduced = trimmed(s);
+		if (isAlphaNum(reduced) != reduced.size())
+			throw std::domain_error("[mcl::StoN] (const std::string&)s must be alpha-numeric once trimmed.");
+		N out = 0;
+		if (r)
+		{
+			N p = 1;
+			usint v;
+			for (char c : reduced)
+			{
+				v = c - isDigit(c) * '0'
+				      - isUpper(c) * ('A' - 10)
+							- isLower(c) * ('a' - 10);
+				if (v < b)
+					out += p * v;
+				else
+					throw std::domain_error(
+						"[mcl::StoN] character '"s + 'c' + "' is not allowed in a base-" + NtoS(b) +
+						" number");
+			}
+		}
+	}
+	template <typename Z> Z StoI(const std::string&, usint b, bool r)
+	{
+		if (!(2 <= b && b < 37))
+			throw std::domain_error("mcl::StoI: argument `b` must be between 2 and 36");
+	}
+
+
+	charClass getCClass(char c)
+	{
+		if (isCntrl(c)) return control;
+		if (isWhite(c)) return whitespace;
+		if (isPunct(c)) return punctuation;
+		if (isDigit(c)) return digit;
+		if (isUpper(c)) return uppercase;
+		if (isLower(c)) return lowercase;
+		return extended;
+	}
+	bool isCntrl(char c) { return 0x00 <= c && c < 0x20 || c == 0x7F; }
+	bool isWhite(char c) { return c == ' ' || c == '\t' || c == '\n' || c == '\r'; }
+	bool isPunct(char c) { return 0x20 <= c && c < 0x30
+			                       || 0x3A <= c && c < 0x41
+			                       || 0x5B <= c && c < 0x61
+			                       || 0x7B <= c && c < 0x7F; }
+	bool isDigit(char c) { return 0x30 <= c && c < 0x3A; }
+	bool isUpper(char c) { return 0x41 <= c && c < 0x5B; }
+	bool isLower(char c) { return 0x61 <= c && c < 0x7B; }
+	bool isAlpha(char c) { return isUpper(c) || isLower(c); }
+	bool isAlphaNum(char c) { return isAlpha(c) || isDigit(c); }
+	
+	size_t isCntrl(const std::string& s)
+	{
+		for (size_t i = 0; i < s.size(); i++)
+			if (!isCntrl(s[i])) return i;
+		return s.size();
+	}
+	size_t isWhite(const std::string& s)
+	{
+		for (size_t i = 0; i < s.size(); i++)
+			if (!isWhite(s[i])) return i;
+		return s.size();
+	}
+	size_t isPunct(const std::string& s)
+	{
+		for (size_t i = 0; i < s.size(); i++)
+			if (!isPunct(s[i])) return i;
+		return s.size();
+	}
+	size_t isDigit(const std::string& s)
+	{
+		for (size_t i = 0; i < s.size(); i++)
+			if (!isDigit(s[i])) return i;
+		return s.size();
+	}
+	size_t isUpper(const std::string& s)
+	{
+		for (size_t i = 0; i < s.size(); i++)
+			if (!isUpper(s[i])) return i;
+		return s.size();
+	}
+	size_t isLower(const std::string& s)
+	{
+		for (size_t i = 0; i < s.size(); i++)
+			if (!isLower(s[i])) return i;
+		return s.size();
+	}
+	size_t isAlpha(const std::string& s)
+	{
+		for (size_t i = 0; i < s.size(); i++)
+			if (!isAlpha(s[i])) return i;
+		return s.size();
+	}
+	size_t isAlphaNum(const std::string& s)
+	{
+		for (size_t i = 0; i < s.size(); i++)
+			if (!isAlphaNum(s[i])) return i;
+		return s.size();
+	}
+
+	bool extends(const std::string& a, const std::string& b)
+	{
+		for (int i = 0; ; i++)
+		{
+			if (i == a.size() || i == b.size())
+				return 1;
+			if (a[i] != b[i])
+				return 0;
+		}
+	}
+	size_t find(char c, const std::string& s)
+	{
+		for (int i = 0; i < s.size(); i++)
+			if (s[i] == c) return i;
+		return s.size();
+	}
+
+
+	void trimFront(std::string& s)
+	{
+		s.erase(0, isWhite(s));
+	}
+	void trimBack(std::string& s)
+	{
+		while (isWhite(s.back())) s.pop_back();
+	}
+
+	std::vector<std::string> split(std::string s, char delim, bool include)
+	{
+		std::vector<std::string> out = { "" };
+		for (char c : s)
+		{
+			if (c == delim)
+			{
+				if (include)
+					out.back() += c;
+				out.push_back("");
+			}
+			else
+				out.back() += c;
+		}
+		return out;
+	}
+}
+
+
+#endif

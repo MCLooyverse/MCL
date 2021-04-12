@@ -119,7 +119,14 @@ namespace mcl
 
 
 
-
+	char toUpper(char);
+	char& makeUpper(char& a) { return a = toUpper(a); }
+	char toLower(char);
+	char& makeLower(char& a) { return a = toLower(a); }
+	std::string toUpper(const std::string&);
+	std::string& makeUpper(std::string&);
+	std::string toLower(const std::string&);
+	std::string& makeLower(std::string&);
 
 
 
@@ -318,6 +325,41 @@ namespace mcl
 				out.back() += c;
 		}
 		return out;
+	}
+
+
+	
+	char toUpper(char a)
+	{
+		if (isLower(a))
+			return a - ('a' - 'A');
+		return a;
+	}
+	char toLower(char a)
+	{
+		if (isUpper(a))
+			return a + ('a' - 'A');
+		return a;
+	}
+	std::string toUpper(const std::string& a)
+	{
+		std::string out{a};
+		return makeUpper(out);
+	}
+	std::string& makeUpper(std::string& a)
+	{
+		for (char& c : a) makeUpper(c);
+		return a;
+	}
+	std::string toLower(const std::string& a)
+	{
+		std::string out{a};
+		return makeLower(out);
+	}
+	std::string& makeLower(std::string& a)
+	{
+		for (char& c : a) makeLower(c);
+		return a;
 	}
 }
 

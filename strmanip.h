@@ -61,9 +61,9 @@ namespace mcl
 		{ return mcl::SintoI(i, e, z, 6, 1); }
 
 		template <typename N> N StoN(const std::string& s)
-		{ return mcl::StoN(s, 6, 1); }
+		{ return mcl::StoN<N>(s, 6, 1); }
 		template <typename Z> Z StoI(const std::string& s)
-		{ return mcl::StoI(s, 6, 1); }
+		{ return mcl::StoI<Z>(s, 6, 1); }
 	}
 
 
@@ -102,16 +102,20 @@ namespace mcl
 	size_t find(char, const std::string&);
 
 
-	void trimFront(std::string&);
+	std::string& trimFront(std::string&);
 	std::string trimmedFront(const std::string& s)
-	{ auto t = s; trimFront(t); return t; }
-	void trimBack(std::string&);
+	{ auto t = s; return trimFront(t); }
+	std::string& trimBack(std::string&);
 	std::string trimmedBack(const std::string& s)
-	{ auto t = s; trimBack(t); return t; }
-	void trim(std::string& s)
-	{ trimFront(s); trimBack(s); }
+	{ auto t = s; return trimBack(t); }
+	std::string& trim(std::string& s)
+	{ trimFront(s); trimBack(s); return s; }
 	std::string trimmed(const std::string& s)
-	{ auto t = s; trim(t); return t; }
+	{ auto t = s; return trim(t); }
+
+	std::string& reduceWhitespace(std::string&);
+	std::string reducedWhitespace(const std::string& s)
+	{ auto a = s; return reduceWhitespace(a); }
 
 
 
@@ -180,6 +184,7 @@ namespace mcl
 
 	template <typename N> N StoN(const std::string& s, usint b, bool r)
 	{
+		using std::literals::operator""s;
 		if (!(2 <= b && b < 37))
 			throw std::domain_error("[mcl::StoN] (unsigned short int)b must be between 2 and 36.");
 		
@@ -201,14 +206,90 @@ namespace mcl
 				else
 					throw std::domain_error(
 						"[mcl::StoN] character '"s + 'c' + "' is not allowed in a base-" + NtoS(b) +
-						" number");
+						" number"
+					);
 			}
 		}
+		else
+		{
+			usint v;
+			for (char c : reduced)
+			{
+				v = c - isDigit(c) * '0'
+				      - isUpper(c) * ('A' - 10)
+							- isLower(c) * ('a' - 10);
+				if (v < b)
+					(out *= b) += v;
+				else
+					throw std::domain_error(
+						"[mcl::StoN] character '"s + 'c' + "' is not allowed in a base-" + NtoS(b) +
+						" number"
+					);
+			}
+		}
+		return out;
 	}
-	template <typename Z> Z StoI(const std::string&, usint b, bool r)
+	template <typename Z> Z StoI(const std::string& s, usint b, bool r)
 	{
+		using std::literals::operator""s;
 		if (!(2 <= b && b < 37))
-			throw std::domain_error("mcl::StoI: argument `b` must be between 2 and 36");
+			throw std::domain_error("[mcl::StoN] (unsigned short int)b must be between 2 and 36.");
+		
+		auto reduced = trimmed(s);
+		if (!reduced.size())
+			return 0;
+
+		bool neg = 0;
+		if (reduced[0] == '-')
+		{
+			neg = 1;
+			reduced.erase(reduced.begin());
+			trimFront(reduced);
+		}
+		if (isAlphaNum(reduced) != reduced.size())
+			throw std::domain_error("[mcl::StoN] (const std::string&)s must be alpha-numeric once trimmed.");
+		Z out = 0;
+
+
+		if (r)
+		{
+			Z p = 1;
+			usint v;
+			for (char c : reduced)
+			{
+				v = c - isDigit(c) * '0'
+				      - isUpper(c) * ('A' - 10)
+							- isLower(c) * ('a' - 10);
+				if (v < b)
+					out += p * v;
+				else
+					throw std::domain_error(
+						"[mcl::StoN] character '"s + 'c' + "' is not allowed in a base-" + NtoS(b) +
+						" number"
+					);
+			}
+		}
+		else
+		{
+			usint v;
+			for (char c : reduced)
+			{
+				v = c - isDigit(c) * '0'
+				      - isUpper(c) * ('A' - 10)
+							- isLower(c) * ('a' - 10);
+				if (v < b)
+					(out *= b) += v;
+				else
+					throw std::domain_error(
+						"[mcl::StoN] character '"s + 'c' + "' is not allowed in a base-" + NtoS(b) +
+						" number"
+					);
+			}
+		}
+		if (neg)
+			return -out;
+		else
+			return out;
 	}
 
 
@@ -301,13 +382,36 @@ namespace mcl
 	}
 
 
-	void trimFront(std::string& s)
+	std::string& trimFront(std::string& s)
 	{
-		s.erase(0, isWhite(s));
+		return s.erase(0, isWhite(s));
 	}
-	void trimBack(std::string& s)
+	std::string& trimBack(std::string& s)
 	{
 		while (isWhite(s.back())) s.pop_back();
+		return s;
+	}
+
+	std::string& reduceWhitespace(std::string& s)
+	{
+		bool a = 0;
+		for (auto i = s.begin(); i != s.end(); )
+		{
+			if (isWhite(*i))
+			{
+				if (a)
+					i = s.erase(i);
+				else
+					*i++ = ' ';
+				a = 1;
+			}
+			else
+			{
+				a = 0;
+				++i;
+			}
+		}
+		return s;
 	}
 
 	std::vector<std::string> split(std::string s, char delim, bool include)

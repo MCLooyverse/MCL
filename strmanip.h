@@ -44,6 +44,23 @@ namespace mcl
 	template <typename N> N StoN(const std::string&, usint = 10, bool = 0);
 	template <typename Z> Z StoI(const std::string&, usint = 10, bool = 0);
 
+	/**
+	 * A tiny function to quickly append `n` as a base-10 string
+	 * onto the end of `s`
+	 * 
+	 * Returns reference to `s`
+	 */
+	inline std::string& pushB10(std::string&, unsigned int);
+
+	/**
+	 * A tiny function to interpret `s` as a base-10 number, and
+	 * return its value.  Note that this function will simply ignore
+	 * non-digits, and throw no error.  `getB10("83 8, \a23\x1B[2;3H")`
+	 * will return 8382323
+	 */
+	inline unsigned int getB10(const std::string&);
+
+
 
 	namespace rseximal {
 		template <typename N> std::string NtoS(N n, uint m = 0)
@@ -75,7 +92,7 @@ namespace mcl
 	bool isUpper(char);
 	bool isLower(char);
 	bool isAlpha(char);
-	bool isAlphaNum(char);
+	bool isAlnum(char);
 
 	bool isCntrl(const std::string::const_iterator& i) { return isCntrl(*i); }
 	bool isWhite(const std::string::const_iterator& i) { return isWhite(*i); }
@@ -84,7 +101,7 @@ namespace mcl
 	bool isUpper(const std::string::const_iterator& i) { return isUpper(*i); }
 	bool isLower(const std::string::const_iterator& i) { return isLower(*i); }
 	bool isAlpha(const std::string::const_iterator& i) { return isAlpha(*i); }
-	bool isAlphaNum(const std::string::const_iterator& i) { return isAlphaNum(*i); }	
+	bool isAlnum(const std::string::const_iterator& i) { return isAlnum(*i); }
 	
 	size_t isCntrl(const std::string&);
 	size_t isWhite(const std::string&);
@@ -93,7 +110,26 @@ namespace mcl
 	size_t isUpper(const std::string&);
 	size_t isLower(const std::string&);
 	size_t isAlpha(const std::string&);
-	size_t isAlphaNum(const std::string&);
+	size_t isAlnum(const std::string&);
+
+
+	std::string::const_iterator isCntrl(std::string::const_iterator i, const std::string::const_iterator& e);
+	std::string::const_iterator isWhite(std::string::const_iterator i, const std::string::const_iterator& e);
+	std::string::const_iterator isPunct(std::string::const_iterator i, const std::string::const_iterator& e);
+	std::string::const_iterator isDigit(std::string::const_iterator i, const std::string::const_iterator& e);
+	std::string::const_iterator isUpper(std::string::const_iterator i, const std::string::const_iterator& e);
+	std::string::const_iterator isLower(std::string::const_iterator i, const std::string::const_iterator& e);
+	std::string::const_iterator isAlpha(std::string::const_iterator i, const std::string::const_iterator& e);
+	std::string::const_iterator isAlnum(std::string::const_iterator i, const std::string::const_iterator& e);
+
+	std::string::iterator isCntrl(std::string::iterator i, const std::string::const_iterator& e);
+	std::string::iterator isWhite(std::string::iterator i, const std::string::const_iterator& e);
+	std::string::iterator isPunct(std::string::iterator i, const std::string::const_iterator& e);
+	std::string::iterator isDigit(std::string::iterator i, const std::string::const_iterator& e);
+	std::string::iterator isUpper(std::string::iterator i, const std::string::const_iterator& e);
+	std::string::iterator isLower(std::string::iterator i, const std::string::const_iterator& e);
+	std::string::iterator isAlpha(std::string::iterator i, const std::string::const_iterator& e);
+	std::string::iterator isAlnum(std::string::iterator i, const std::string::const_iterator& e);
 
 	//Returns true if there exists `c :: std::string`
 	//such that `a == b + c` or `a + c == b`,
@@ -113,13 +149,28 @@ namespace mcl
 	std::string trimmed(const std::string& s)
 	{ auto t = s; return trim(t); }
 
-	std::string& reduceWhitespace(std::string&);
-	std::string reducedWhitespace(const std::string& s)
-	{ auto a = s; return reduceWhitespace(a); }
+	std::string& reduceWS(std::string&);
+	std::string reducedWS(const std::string& s)
+	{ auto a = s; return reduceWS(a); }
+
+	std::string& remove(char c, std::string& s);
+	std::string& remove(charClass c, std::string& s);
+	/*
+	void remove(char c, std::string::iterator i, const std::string::const_iterator& e);
+	void remove(charClass c, std::string::iterator i, const std::string::const_iterator& e);
+	*/
+	std::string removed(char c, std::string s);
+	std::string removed(charClass c, std::string s);
+	std::string removed(char c, std::string::const_iterator i, const std::string::const_iterator& e);
+	std::string removed(charClass c, std::string::const_iterator i, const std::string::const_iterator& e);
 
 
 
 	std::vector<std::string> split(std::string s, char delim = '\n', bool include = 0);
+	std::vector<std::string> split(std::string s, charClass, bool include = 0);
+
+
+	std::vector<std::string> tokens(std::string s);
 
 
 
@@ -131,6 +182,17 @@ namespace mcl
 	std::string& makeUpper(std::string&);
 	std::string toLower(const std::string&);
 	std::string& makeLower(std::string&);
+	std::string toUpper(std::string::const_iterator i, const std::string::const_iterator& e);
+	void makeUpper(std::string::iterator i, const std::string::const_iterator& e);
+	std::string toLower(std::string::const_iterator i, const std::string::const_iterator& e);
+	void makeLower(std::string::iterator i, const std::string::const_iterator& e);
+
+
+
+	/**
+	 * "  a   B12c " is equivalent to "a b12c" and "\tA\nB12C"
+	 */
+	bool looseEquivalence(std::string a, std::string b, int lvl = 15);
 
 
 
@@ -189,7 +251,7 @@ namespace mcl
 			throw std::domain_error("[mcl::StoN] (unsigned short int)b must be between 2 and 36.");
 		
 		auto reduced = trimmed(s);
-		if (isAlphaNum(reduced) != reduced.size())
+		if (isAlnum(reduced) != reduced.size())
 			throw std::domain_error("[mcl::StoN] (const std::string&)s must be alpha-numeric once trimmed.");
 		N out = 0;
 		if (r)
@@ -246,7 +308,7 @@ namespace mcl
 			reduced.erase(reduced.begin());
 			trimFront(reduced);
 		}
-		if (isAlphaNum(reduced) != reduced.size())
+		if (isAlnum(reduced) != reduced.size())
 			throw std::domain_error("[mcl::StoN] (const std::string&)s must be alpha-numeric once trimmed.");
 		Z out = 0;
 
@@ -292,6 +354,30 @@ namespace mcl
 			return out;
 	}
 
+	inline std::string& pushB10(std::string& s, unsigned int n)
+	{
+		int p = 1;
+		while (p <= n)
+			p *= 10;
+		while (p /= 10, p)
+		{
+			s += '0' + (n / p);
+			n %= p;
+		}
+		return s;
+	}
+	inline unsigned int getB10(const std::string& s)
+	{
+		unsigned int out = 0;
+		for (char c : s)
+		{
+			c -= '0';
+			if (0 <= c && c <= 9)
+				(out *= 10) += c;
+		}
+		return out;
+	}
+
 
 	charClass getCClass(char c)
 	{
@@ -313,7 +399,7 @@ namespace mcl
 	bool isUpper(char c) { return 0x41 <= c && c < 0x5B; }
 	bool isLower(char c) { return 0x61 <= c && c < 0x7B; }
 	bool isAlpha(char c) { return isUpper(c) || isLower(c); }
-	bool isAlphaNum(char c) { return isAlpha(c) || isDigit(c); }
+	bool isAlnum(char c) { return isAlpha(c) || isDigit(c); }
 	
 	size_t isCntrl(const std::string& s)
 	{
@@ -357,11 +443,93 @@ namespace mcl
 			if (!isAlpha(s[i])) return i;
 		return s.size();
 	}
-	size_t isAlphaNum(const std::string& s)
+	size_t isAlnum(const std::string& s)
 	{
 		for (size_t i = 0; i < s.size(); i++)
-			if (!isAlphaNum(s[i])) return i;
+			if (!isAlnum(s[i])) return i;
 		return s.size();
+	}
+
+	std::string::const_iterator isCntrl(std::string::const_iterator i, const std::string::const_iterator& e)
+	{
+		while (i < e && isCntrl(i)) ++i;
+		return i;
+	}
+	std::string::const_iterator isWhite(std::string::const_iterator i, const std::string::const_iterator& e)
+	{
+		while (i < e && isWhite(i)) ++i;
+		return i;
+	}
+	std::string::const_iterator isPunct(std::string::const_iterator i, const std::string::const_iterator& e)
+	{
+		while (i < e && isPunct(i)) ++i;
+		return i;
+	}
+	std::string::const_iterator isDigit(std::string::const_iterator i, const std::string::const_iterator& e)
+	{
+		while (i < e && isDigit(i)) ++i;
+		return i;
+	}
+	std::string::const_iterator isUpper(std::string::const_iterator i, const std::string::const_iterator& e)
+	{
+		while (i < e && isUpper(i)) ++i;
+		return i;
+	}
+	std::string::const_iterator isLower(std::string::const_iterator i, const std::string::const_iterator& e)
+	{
+		while (i < e && isLower(i)) ++i;
+		return i;
+	}
+	std::string::const_iterator isAlpha(std::string::const_iterator i, const std::string::const_iterator& e)
+	{
+		while (i < e && isAlpha(i)) ++i;
+		return i;
+	}
+	std::string::const_iterator isAlnum(std::string::const_iterator i, const std::string::const_iterator& e)
+	{
+		while (i < e && isAlnum(i)) ++i;
+		return i;
+	}
+
+	std::string::iterator isCntrl(std::string::iterator i, const std::string::const_iterator& e)
+	{
+		while (i < e && isCntrl(i)) ++i;
+		return i;
+	}
+	std::string::iterator isWhite(std::string::iterator i, const std::string::const_iterator& e)
+	{
+		while (i < e && isWhite(i)) ++i;
+		return i;
+	}
+	std::string::iterator isPunct(std::string::iterator i, const std::string::const_iterator& e)
+	{
+		while (i < e && isPunct(i)) ++i;
+		return i;
+	}
+	std::string::iterator isDigit(std::string::iterator i, const std::string::const_iterator& e)
+	{
+		while (i < e && isDigit(i)) ++i;
+		return i;
+	}
+	std::string::iterator isUpper(std::string::iterator i, const std::string::const_iterator& e)
+	{
+		while (i < e && isUpper(i)) ++i;
+		return i;
+	}
+	std::string::iterator isLower(std::string::iterator i, const std::string::const_iterator& e)
+	{
+		while (i < e && isLower(i)) ++i;
+		return i;
+	}
+	std::string::iterator isAlpha(std::string::iterator i, const std::string::const_iterator& e)
+	{
+		while (i < e && isAlpha(i)) ++i;
+		return i;
+	}
+	std::string::iterator isAlnum(std::string::iterator i, const std::string::const_iterator& e)
+	{
+		while (i < e && isAlnum(i)) ++i;
+		return i;
 	}
 
 	bool extends(const std::string& a, const std::string& b)
@@ -392,26 +560,94 @@ namespace mcl
 		return s;
 	}
 
-	std::string& reduceWhitespace(std::string& s)
+	std::string& reduceWS(std::string& s)
 	{
-		bool a = 0;
-		for (auto i = s.begin(); i != s.end(); )
+		for (auto i = s.begin(); i != s.end(); i++)
 		{
-			if (isWhite(*i))
-			{
-				if (a)
-					i = s.erase(i);
-				else
-					*i++ = ' ';
-				a = 1;
-			}
-			else
-			{
-				a = 0;
-				++i;
-			}
+			auto old = i;
+			i = isWhite(i, s.end());
+			if (i != old)
+				i = s.erase(old, i);
 		}
 		return s;
+	}
+
+	std::string& remove(char c, std::string& s)
+	{
+		for (auto i = s.begin(); i != s.end(); )
+		{
+			if (*i == c)
+				i = s.erase(i);
+			else
+				++i;
+		}
+		return s;
+	}
+	std::string& remove(charClass c, std::string& s)
+	{
+		for (auto i = s.begin(); i != s.end(); )
+		{
+			if (getCClass(*i) == c)
+				i = s.erase(i);
+			else
+				++i;
+		}
+		return s;
+	}
+	/*
+	void remove(char c, std::string::iterator i, const std::string::const_iterator& e)
+	{
+		while (i < e)
+		{
+			if (*i == c)
+				i = s.erase(i);
+			else
+				++i;
+		}
+	}
+	void remove(charClass c, std::string::iterator i, const std::string::const_iterator& e);
+	*/
+	std::string removed(char c, std::string s)
+	{
+		std::string out{""};
+		for (char ch : s)
+		{
+			if (ch != c)
+				out += ch;
+		}
+		return out;
+	}
+	std::string removed(charClass c, std::string s)
+	{
+		std::string out{""};
+		for (char ch : s)
+		{
+			if (getCClass(ch) != c)
+				out += ch;
+		}
+		return out;
+	}
+	std::string removed(char c, std::string::const_iterator i, const std::string::const_iterator& e)
+	{
+		std::string out{""};
+		while (i != e)
+		{
+			if (*i != c)
+				out += *i;
+			++i;
+		}
+		return out;
+	}
+	std::string removed(charClass c, std::string::const_iterator i, const std::string::const_iterator& e)
+	{
+		std::string out{""};
+		while (i != e)
+		{
+			if (getCClass(*i) != c)
+				out += *i;
+			++i;
+		}
+		return out;
 	}
 
 	std::vector<std::string> split(std::string s, char delim, bool include)
@@ -429,6 +665,11 @@ namespace mcl
 				out.back() += c;
 		}
 		return out;
+	}
+
+	std::vector<std::string> tokens(std::string s)
+	{
+		return split(reduceWS(trim(s)), ' ');
 	}
 
 
@@ -464,6 +705,41 @@ namespace mcl
 	{
 		for (char& c : a) makeLower(c);
 		return a;
+	}
+	std::string toUpper(std::string::const_iterator i, const std::string::const_iterator& e)
+	{
+		std::string out{""};
+		while (i < e) out += toUpper(*i);
+		return out;
+	}
+	void makeUpper(std::string::iterator i, const std::string::const_iterator& e)
+	{
+		while (i < e) makeUpper(*i);
+	}
+	std::string toLower(std::string::const_iterator i, const std::string::const_iterator& e)
+	{
+		std::string out{""};
+		while (i < e) out += toLower(*i);
+		return out;
+	}
+	void makeLower(std::string::iterator i, const std::string::const_iterator& e)
+	{
+		while (i < e) makeUpper(*i);
+	}
+
+
+
+	bool looseEquivalence(std::string a, std::string b, int lvl)
+	{
+		if (lvl & 1)
+			trim(a), trim(b);
+		if (lvl & 2)
+			reduceWS(a), reduceWS(b);
+		if (lvl & 4)
+			makeUpper(a), makeUpper(b);
+		if (lvl & 8)
+			remove(punctuation, a), remove(punctuation, b);
+		return a == b;
 	}
 }
 

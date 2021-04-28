@@ -567,7 +567,7 @@ namespace mcl
 			auto old = i;
 			i = isWhite(i, s.end());
 			if (i != old)
-				i = s.erase(old, i);
+				i = s.erase(old+1, i), *(i-1) = ' ';
 		}
 		return s;
 	}

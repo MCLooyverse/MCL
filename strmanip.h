@@ -2,13 +2,13 @@
 #define MCL_STRING_MANIPULATION_H
 
 #include <string>
-#include "typedefs.h"
 #include <vector>
 #include <stdexcept>
 
 
 namespace mcl
 {
+	using usint = unsigned short int;
 	namespace strmanip_consts
 	{
 		constexpr const char digits[] = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";

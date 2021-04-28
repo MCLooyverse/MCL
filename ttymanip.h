@@ -28,24 +28,32 @@ namespace mcl
 		#define AEC_UP(x) AEC_CSI #x "A"
 		std::string up(unsigned short int i)
 		{
+			if (!i)
+				return "";
 			std::string out{AEC_CSI};
 			return pushB10(out, i) + 'A';
 		}
 		#define AEC_DOWN(x) AEC_CSI #x "B"
 		std::string down(unsigned short int i)
 		{
+			if (!i)
+				return "";
 			std::string out{AEC_CSI};
 			return pushB10(out, i) + 'B';
 		}
 		#define AEC_FORWARD(x) AEC_CSI #x "C"
 		std::string forward(unsigned short int i)
 		{
+			if (!i)
+				return "";
 			std::string out{AEC_CSI};
 			return pushB10(out, i) + 'C';
 		}
 		#define AEC_BACKWARD(x) AEC_CSI #x "D"
 		std::string backward(unsigned short int i)
 		{
+			if (!i)
+				return "";
 			std::string out{AEC_CSI};
 			return pushB10(out, i) + 'D';
 		}

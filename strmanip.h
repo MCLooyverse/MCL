@@ -16,17 +16,62 @@ namespace mcl
 	}
 
 	enum charClass {
-		control,
-		whitespace,
-		punctuation,
-		digit,
-		uppercase,
-		lowercase,
-		extended
+		control = 1,
+		whitespace = 2,
+		punctuation = 4,
+		digit = 8,
+		uppercase = 16,
+		lowercase = 32,
+		extended = 64
 	};
 
-	enum smerr {
-		invalidBase
+	struct TokenType
+	{
+		TokenType(int c, std::string e = "")
+			: fst{c},   mid{c},   lst{c},
+			exfst{e}, exmid{e}, exlst{e} { }
+		TokenType(int c0, int c1,
+				std::string e0 = "", std::string e1 = "")
+			: fst{c0},   mid{c1},   lst{c1},
+			exfst{e0}, exmid{e1}, exlst{e1} { }
+		TokenType(int c0, int c1, int c2,
+				std::string e0 = "", std::string e1 = "", std::string e2 = "")
+			: fst{c0},   mid{c1},   lst{c2},
+			exfst{e0}, exmid{e1}, exlst{e2} { }
+
+
+
+		std::string readToken(
+			std::string::const_iterator& i,
+			const std::string::const_iterator& e);
+		std::string readToken(
+			std::string::iterator& i,
+			const std::string::const_iterator& e);
+		std::string readToken(
+			std::string::const_iterator& i,
+			const std::string::const_iterator&& e);
+		std::string readToken(
+			std::string::iterator& i,
+			const std::string::const_iterator&& e);
+		
+
+		std::string ignoreAndRead(
+			std::string::const_iterator& i,
+			const std::string::const_iterator& e);
+		std::string ignoreAndRead(
+			std::string::iterator& i,
+			const std::string::const_iterator& e);
+		std::string ignoreAndRead(
+			std::string::const_iterator& i,
+			const std::string::const_iterator&& e);
+		std::string ignoreAndRead(
+			std::string::iterator& i,
+			const std::string::const_iterator&& e);
+			
+
+	private:
+		int fst, mid, lst;
+		std::string exfst, exmid, exlst;
 	};
 
 	template <typename N> std::string NtoS(N, usint = 10, uint = 0, bool = 0);
@@ -201,6 +246,147 @@ namespace mcl
 	  //=============//
 	 // DEFINITIONS //
 	//=============//
+
+	/*
+	std::string TokenType::readToken(
+		std::string::const_iterator& i,
+		const std::string::const_iterator& e)
+	{
+		if (i == e)
+			return "";
+
+		
+		std::string out{""};
+		if (getCClass(*i) & fst && find(*i, exfst) == exfst.size())
+			out += *i++;
+		else
+			return out;
+		
+		if (greedy)
+		{
+			for (auto begin = i-1, last = i-1; i != e; i++)
+			{
+				if (getCClass(*i) & lst && find(*i, exlst) == exlst.size())
+					last = i;
+
+				if (!(getCClass(*i) & mid && find(*i, exmid) == exmid.size()))
+				{
+					++i;
+				}
+			}
+		}
+	}
+	std::string TokenType::readToken(
+		std::string::iterator& i,
+		const std::string::const_iterator& e)
+	{
+		if (i == e)
+			return "";
+
+		
+		std::string out{""};
+		if (getCClass(*i) & fst && find(*i, exfst) == exfst.size())
+			out += *i++;
+		else
+			return out;
+		
+		if (greedy)
+		{
+			for (auto begin = i-1, last = i-1; i != e; i++)
+			{
+				if (getCClass(*i) & lst && find(*i, exlst) == exlst.size())
+					last = i;
+
+				if (!(getCClass(*i) & mid && find(*i, exmid) == exmid.size()))
+				{
+					++i;
+				}
+			}
+		}
+	}
+	std::string TokenType::readToken(
+		std::string::const_iterator& i,
+		const std::string::const_iterator&& e)
+	{
+		if (i == e)
+			return "";
+
+		
+		std::string out{""};
+		if (getCClass(*i) & fst && find(*i, exfst) == exfst.size())
+			out += *i++;
+		else
+			return out;
+		
+		if (greedy)
+		{
+			for (auto begin = i-1, last = i-1; i != e; i++)
+			{
+				if (getCClass(*i) & lst && find(*i, exlst) == exlst.size())
+					last = i;
+
+				if (!(getCClass(*i) & mid && find(*i, exmid) == exmid.size()))
+				{
+					++i;
+				}
+			}
+		}
+	}
+	std::string TokenType::readToken(
+		std::string::iterator& i,
+		const std::string::const_iterator&& e)
+	{
+		if (i == e)
+			return "";
+
+		
+		std::string out{""};
+		if (getCClass(*i) & fst && find(*i, exfst) == exfst.size())
+			out += *i++;
+		else
+			return out;
+		
+		if (greedy)
+		{
+			for (auto begin = i-1, last = i-1; i != e; i++)
+			{
+				if (getCClass(*i) & lst && find(*i, exlst) == exlst.size())
+					last = i;
+
+				if (!(getCClass(*i) & mid && find(*i, exmid) == exmid.size()))
+				{
+					++i;
+				}
+			}
+		}
+	}
+	
+
+	std::string TokenType::ignoreAndRead(
+		std::string::const_iterator& i,
+		const std::string::const_iterator& e)
+	{
+
+	}
+	std::string TokenType::ignoreAndRead(
+		std::string::iterator& i,
+		const std::string::const_iterator& e)
+	{
+
+	}
+	std::string TokenType::ignoreAndRead(
+		std::string::const_iterator& i,
+		const std::string::const_iterator&& e)
+	{
+
+	}
+	std::string TokenType::ignoreAndRead(
+		std::string::iterator& i,
+		const std::string::const_iterator&& e)
+	{
+
+	}
+	*/
 
 	template <typename N>
 	std::string NtoS(N n, usint b, uint m, bool r)
@@ -389,7 +575,7 @@ namespace mcl
 		if (isLower(c)) return lowercase;
 		return extended;
 	}
-	bool isCntrl(char c) { return 0x00 <= c && c < 0x20 || c == 0x7F; }
+	bool isCntrl(char c) { return 0x00 <= c && c < 0x20 && !isWhite(c) || c == 0x7F; }
 	bool isWhite(char c) { return c == ' ' || c == '\t' || c == '\n' || c == '\r'; }
 	bool isPunct(char c) { return 0x20 <= c && c < 0x30
 			                       || 0x3A <= c && c < 0x41

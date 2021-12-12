@@ -1,0 +1,164 @@
+#ifndef MCL_STRING_MANIPULATION_H
+#define MCL_STRING_MANIPULATION_H
+
+#include <exception>
+#include <string>
+#include "../concepts.h"
+
+
+namespace mcl
+{
+	  /*************/
+	 /* CONSTANTS */
+	/*************/
+
+	class NumOpt;
+	enum NumOpt::Dir;
+	enum NumOpt::Side;
+
+	constexpr NumOptions nopt_default(
+		6, NumOpt::Dir::ltr, NumOpt::Side::rhs, " \t\n\r_"
+	);
+	constexpr NumOptions nopt_traditional(
+		10, NumOpt::Dir::rtl, NumOpt::Side::lhs, " \t\n\r_"
+	);
+
+	constexpr char digits[] = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+
+		/**************/
+	 /* PROTOTYPES */
+	/**************/
+
+	class NumOpt
+	{
+	public:
+		enum Dir  { ltr, rtl };
+		enum Side { lhs, rhs };
+
+		NumOpt(
+			unsigned short base,
+			Dir direction,
+			Side signSide,
+			bool signForced,
+			std::string ignorable
+		);
+
+		unsigned short base() const;
+		NumOpt& base(unsigned short b);
+
+		Dir direction() const;
+		NumOpt& direction(Dir d);
+
+		Side signSide() const;
+		NumOpt& signSide(Side s);
+
+		bool signForced() const;
+		NumOpt& signForced(bool f);
+
+		std::string ignorable() const;
+		NumOpt& ignorable(const std::string& i);
+
+	private:
+		unsigned short m_base;
+		Dir m_direction;
+		Side m_signSide;
+		bool m_signForced;
+		std::string m_ignorable;
+	};
+
+
+
+
+	template <typename N, StreamableInputIteratorTo<char> Iter>
+		requires
+			std::assignable_from<N, int> &&
+	N ReadNatural(Iter& i, const Iter& e, const NumOptions& o = nopt_default);
+
+	template <typename I, StreamableInputIteratorTo<char> Iter>
+		requires
+			std::assignable_from<I, int> &&
+			requires (I a) {
+				{ -a } -> std::same_as<I>;
+			}
+	I ReadInteger(Iter& i, const Iter& e, const NumOptions& o = nopt_default);
+
+	template <typename R, StreamableInputIteratorTo<char> Iter>
+		requires
+			std::assignable_from<R, int> &&
+			requires (R a) {
+				{ -a } -> std::same_as<R>;
+			}
+	R ReadReal(Iter& i, const Iter& e, const NumOptions& o = nopt_default);
+
+
+
+	/* For any `c`,
+	int digitVal(char c);
+
+
+
+
+
+
+
+	  /***************/
+	 /* DEFINITIONS */
+	/***************/
+
+	NumOpt::NumOpt(
+		unsigned short base,
+		NumOpt::Dir direction,
+		NumOpt::Side signSide,
+		bool signForced,
+		std::string ignorable
+	) : m_base{base}, m_direction{direction}, m_signSide{signSide}, m_signForced{signForced}, m_ignorable{ignorable}
+	{
+		if (m_base < 2)
+			throw std::domain_error("[NumOpt::NumOpt] `base` must not be less than 2.");
+		if (m_base > 36)
+			throw std::domain_error("[NumOpt::NumOpt] `base` must not be more than 36.");
+	}
+
+
+	unsigned short NumOpt::base() const { return m_base; }
+	NumOpt& NumOpt::base(unsigned short b)
+	{
+		if (b < 2)
+			throw std::domain_error("[NumOpt::base(unsigned short)] `b` must not be less than 2.");
+		if (b > 36)
+			throw std::domain_error("[NumOpt::base(unsigned short)] `b` must not be more than 36.");
+		m_base = b;
+		return *this;
+	}
+
+	NumOpt::Dir NumOpt::direction() const { return m_direction; }
+	NumOpt& NumOpt::direction(NumOpt::Dir d) { m_direction = d; return *this; }
+
+	NumOpt::Side NumOpt::signSide() const { return m_signSide; }
+	NumOpt& NumOpt::signSide(NumOpt::Side s) { m_signSide = s; return *this; }
+
+	bool NumOpt::signForced() const { return m_signForced; }
+	NumOpt& NumOpt::signForced(bool f) { m_signForced = f; return *this; }
+
+	std::string NumOpt::ignorable() const { return m_ignorable; }
+	NumOpt& NumOpt::ignorable(const std::string& i) { m_ignorable = i; return *this; }
+
+
+
+	template <typename N, StreamableInputIteratorTo<char> Iter>
+		requires
+			std::assignable_from<N, int>
+	N ReadNatural(Iter& i, const Iter& e, const NumOptions& o)
+	{
+		for (int val; i != e; i++)
+		{
+
+
+		}
+
+
+}
+
+
+#endif
+

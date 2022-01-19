@@ -16,6 +16,8 @@ namespace mcl
 	using ulint = unsigned long int;
 	using llint = long long int;
 	using ullint = unsigned long long int;
+
+	using byte = uint8_t;
 }
 
 

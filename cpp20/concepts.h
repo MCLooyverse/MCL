@@ -43,14 +43,8 @@ namespace mcl
 
 
 	template <typename I, typename T>
-	concept StreamableInputIteratorTo =
-		requires (I i, const I e)
-		{
-			{ i == e } -> Truthy;
-			{ ++i } -> std::same_as<I&>;
-			{ i++ } -> std::same_as<I>;
-			{ *i } -> std::convertable_to<T>;
-		};
+	concept InputIterTo = std::input_iterator<I> &&
+		requires (I i) { { *i } -> std::convertible_to<const T&>; };
 
 	template <typename T, typename U>
 	concept CanConstruct<T, U> = std::constructible_from<U, T>;

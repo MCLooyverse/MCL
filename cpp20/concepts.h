@@ -6,6 +6,7 @@
 #define MCL_CONCEPTS_H
 
 #include <concepts>
+#include <ranges>
 
 
 namespace mcl
@@ -45,6 +46,10 @@ namespace mcl
 	template <typename I, typename T>
 	concept InputIterTo = std::input_iterator<I> &&
 		requires (I i) { { *i } -> std::convertible_to<const T&>; };
+
+	template <typename R, typename T>
+	concept RangeOf = std::ranges::range<R> &&
+		std::convertible_to<std::ranges::range_value_t<R>, T>;
 
 	template <typename T, typename U>
 	concept CanConstruct<T, U> = std::constructible_from<U, T>;

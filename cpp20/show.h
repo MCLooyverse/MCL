@@ -64,7 +64,7 @@ namespace mcl
 		{
 			size_t diff = cf.minwidth - out.size() - (neg || cf.forcesign);
 			if (cf.padway == Cf::zeroes)
-				out.insert(cf.rtl ? out.end() : out.begin(), diff, '0');
+				out.insert(cf.rtl ? out.begin() : out.end(), diff, '0');
 
 			if (neg || cf.forcesign)
 				out.insert(cf.leftsign ? out.begin() : out.end(),

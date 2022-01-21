@@ -36,7 +36,7 @@ namespace mcl
 
 		constexpr char digits[] = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 		constexpr char signs[] = "+-";
-		std::string out;
+		std::string out = n ? "" : "0";
 
 		bool neg = n < 0;
 		if (neg)
@@ -45,13 +45,13 @@ namespace mcl
 		if (cf.rtl)
 		{
 			T place = 1;
-			while (place * cf.base <= n)
+			while (place <= n)
 				place *= cf.base;
-			while (place)
+			while (place > 1)
 			{
+				place /= cf.base;
 				out += digits[n / place];
 				n %= place;
-				place /= cf.base;
 			}
 		}
 		else while (n)

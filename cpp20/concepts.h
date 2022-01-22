@@ -18,7 +18,7 @@ namespace mcl
 	concept ClosedAddition = requires (T a, T b) { { a + b } -> std::same_as<T>; };
 
 	template <typename T>
-	concept Truthy = std::convertable_to<T, bool>;
+	concept Truthy = std::convertible_to<T, bool>;
 
 	template <typename T>
 	concept Eq = requires (T a, T b) { { a == b } -> Truthy; { a != b } -> Truthy; };
@@ -52,7 +52,7 @@ namespace mcl
 		std::same_as<std::ranges::range_value_t<R>, T>;
 
 	template <typename T, typename U>
-	concept CanConstruct<T, U> = std::constructible_from<U, T>;
+	concept CanConstruct = std::constructible_from<U, T>;
 }
 
 

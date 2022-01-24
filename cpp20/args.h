@@ -78,11 +78,26 @@ namespace mcl::args {
 
 
 	namespace supplied_parsers {
+		namespace helper {
+			std::string consume_string(const char*& i)
+			{
+				std::string out{i};
+				i += out.size();
+				return out;
+			}
+			std::string& consume_string(const char*& i,
+					std::string& out)
+			{
+				out = i;
+				i += out.size();
+				return out;
+			}
+		}
+
 		Reader string = [](const char*& i) -> void* {
-			auto out = new std::string;
-			while (*i)
-				out->push_back(*i++);
-			return out;
+			return &helper::consume_string(i,
+					*new std::string{}
+				);
 		};
 
 		//TODO: Fix typename
@@ -122,7 +137,41 @@ namespace mcl::args {
 				return out;
 			};
 		}
-	};
+
+		//exist:  1 -> require existance,
+		//        0 -> don't care
+		//       -1 -> require non-existance
+		//Defaults to reading an extant regular file
+		Reader filedes(int flags = O_RDONLY, int exist = 1,
+				std::filesystem::file_type type =
+				std::filesystem::file_type::regular)
+		{
+			throw 1;
+
+
+			namespace fs = std::filesystem;
+
+			if (exist != -1 && exist != 0 && exist != 1)
+				throw std::domain_error(); //TODO
+
+			switch (type)
+			{
+				case fs::file_type::none:
+				case fs::file_type::not_found:
+					throw std::domain_error(); //TODO
+				default: break;
+			}
+
+			if (flags & O_RDONLY == O_RDONLY &&
+					exist != 1) //TODO: questionable.
+				throw std::domain_error(); //TODO
+		}
+	}
+
+
+	template <typename E>
+	operator bool(const Arg<E>& a)
+	{ return a.success; }
 
 
 

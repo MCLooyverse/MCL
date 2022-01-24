@@ -195,8 +195,22 @@ namespace mcl::args {
 
 
 	template <typename E>
+	bool isLiteral(const Arg<E>& a)
+	{
+		auto p = std::get_if<NonOpt>(&a);
+		return p && *p == NonOpt::none;
+	}
+
+	template <typename E>
+	bool isUnkOpt(const Arg<E>& a)
+	{
+		auto p = std::get_if<NonOpt>(&a);
+		return p && *p == NonOpt::unknown_option;
+	}
+
+	template <typename E>
 	operator bool(const Arg<E>& a)
-	{ return a.success; }
+	{ return a.success && !isUnkOpt(a); }
 
 
 

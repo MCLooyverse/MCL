@@ -171,19 +171,19 @@ namespace mcl::args {
 			namespace fs = std::filesystem;
 
 			if (exist != -1 && exist != 0 && exist != 1)
-				throw std::domain_error(); //TODO
+				throw std::domain_error("TODO"); //TODO
 
 			switch (type)
 			{
 				case fs::file_type::none:
 				case fs::file_type::not_found:
-					throw std::domain_error(); //TODO
+					throw std::domain_error("TODO"); //TODO
 				default: break;
 			}
 
 			if (flags & O_RDONLY == O_RDONLY &&
 					exist != 1) //TODO: questionable.
-				throw std::domain_error(); //TODO
+				throw std::domain_error("TODO"); //TODO
 		}
 
 
@@ -197,7 +197,7 @@ namespace mcl::args {
 			{
 				case fs::file_type::none:
 				case fs::file_type::not_found:
-					throw std::domain_error(); //TODO
+					throw std::domain_error("TODO"); //TODO
 				default: break;
 			}
 
@@ -236,14 +236,14 @@ namespace mcl::args {
 	std::string Arg<E>::literal() const
 	{
 		if (!isLit())
-			throw std::logic_error(); //TODO
+			throw std::logic_error("TODO"); //TODO
 		return *(std::string*)v;
 	}
 	template <typename E>
 	std::string& Arg<E>::literal()
 	{
 		if (!isLit())
-			throw std::logic_error(); //TODO
+			throw std::logic_error("TODO"); //TODO
 		return *(std::string*)v;
 	}
 
@@ -251,7 +251,7 @@ namespace mcl::args {
 	ErrorVal Arg<E>::parseErr() const
 	{
 		if (!isOpt() || !success)
-			throw std::logic_error(); //TODO
+			throw std::logic_error("TODO"); //TODO
 		return *(ErrorVal*)v;
 	}
 		
@@ -259,7 +259,7 @@ namespace mcl::args {
 	UnknownOption Arg<E>::unkOptErr() const
 	{
 		if (!isUnk())
-			throw std::logic_error(); //TODO
+			throw std::logic_error("TODO"); //TODO
 		return *(UnknownOption*)v;
 	}
 
@@ -267,14 +267,14 @@ namespace mcl::args {
 	E Arg<E>::opt() const
 	{
 		if (!isOpt())
-			throw std::logic_error(); //TODO
+			throw std::logic_error("TODO"); //TODO
 		return std::get<E>(option);
 	}
 	template <typename E>
 	E& Arg<E>::opt()
 	{
 		if (!isOpt())
-			throw std::logic_error(); //TODO
+			throw std::logic_error("TODO"); //TODO
 		return std::get<E>(option);
 	}
 

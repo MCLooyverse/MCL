@@ -65,6 +65,11 @@ namespace mcl::args {
 
 		E opt() const;
 		E& opt();
+
+		template <typename T>
+		T as() const;
+		template <typename T>
+		T& as();
 	};
 
 	template <NonOpt e>
@@ -271,6 +276,22 @@ namespace mcl::args {
 		if (!isOpt())
 			throw std::logic_error(); //TODO
 		return std::get<E>(option);
+	}
+
+
+	template <typename E, typename T>
+	T Arg<E>::as<T>() const
+	{
+		if (!isOpt() || !success)
+			throw std::logic_error();
+		return *(T*)v;
+	}
+	template <typename E, typename T>
+	T& Arg<E>::as<T>()
+	{
+		if (!isOpt() || !success)
+			throw std::logic_error();
+		return *(T*)v;
 	}
 
 	template <typename E>

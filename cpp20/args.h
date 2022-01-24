@@ -62,6 +62,9 @@ namespace mcl::args {
 		ErrorVal parseErr() const;
 		
 		UnknownOption unkOptErr() const;
+
+		E opt() const;
+		E& opt();
 	};
 
 	template <NonOpt e>
@@ -253,6 +256,21 @@ namespace mcl::args {
 		if (!isUnk())
 			throw std::logic_error(); //TODO
 		return *(UnknownOption*)v;
+	}
+
+	template <typename E>
+	E Arg<E>::opt() const
+	{
+		if (!isOpt())
+			throw std::logic_error(); //TODO
+		return std::get<E>(option);
+	}
+	template <typename E>
+	E& Arg<E>::opt()
+	{
+		if (!isOpt())
+			throw std::logic_error(); //TODO
+		return std::get<E>(option);
 	}
 
 	template <typename E>

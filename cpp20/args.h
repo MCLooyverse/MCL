@@ -166,6 +166,31 @@ namespace mcl::args {
 					exist != 1) //TODO: questionable.
 				throw std::domain_error(); //TODO
 		}
+
+
+		//Return fs::path
+		Reader extantPath(std::filesystem::file_type type =
+				std::filesystem::file_type::unknown) //unknown means any
+		{
+			namespace fs = std::filesystem;
+
+			switch (type)
+			{
+				case fs::file_type::none:
+				case fs::file_type::not_found:
+					throw std::domain_error(); //TODO
+				default: break;
+			}
+
+			return [=](const char*& i){
+				auto p = new fs::path{helper::consume_string(i)};
+				if (type == fs::file_type::unknown && fs::exists(*p) ||
+						type == fs::status(*p).type())
+					return p;
+				delete p;
+				return NULL;
+			};
+		}
 	}
 
 

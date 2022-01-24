@@ -30,14 +30,6 @@ namespace mcl::args {
 		unknown_option
 	};
 
-	template <typename E>
-	struct Arg
-	{
-		std::variant<E, NonOpt> option;
-		bool success;
-		void* v;
-	};
-
 	struct ErrorVal
 	{
 		int index;
@@ -51,6 +43,25 @@ namespace mcl::args {
 		int around_ind;
 
 		ShortOrLong opt;
+	};
+
+	template <typename E>
+	struct Arg
+	{
+		std::variant<E, NonOpt> option;
+		bool success;
+		void* v;
+
+		bool isLit() const;
+		bool isOpt() const;
+		bool isUnk() const;
+
+		std::string literal() const;
+		std::string& literal();
+
+		ErrorVal parseErr() const;
+		
+		UnknownOption unkOptErr() const;
 	};
 
 	template <NonOpt e>
@@ -194,23 +205,59 @@ namespace mcl::args {
 	}
 
 
-	template <typename E>
-	bool isLiteral(const Arg<E>& a)
-	{
-		auto p = std::get_if<NonOpt>(&a);
-		return p && *p == NonOpt::none;
-	}
 
 	template <typename E>
-	bool isUnkOpt(const Arg<E>& a)
+	bool Arg<E>::isLit() const
 	{
-		auto p = std::get_if<NonOpt>(&a);
+		auto p = std::get_if<NonOpt>(&option);
+		return p && *p == NonOpt::none;
+	}
+	template <typename E>
+	bool Arg<E>::isOpt() const
+	{
+		return std::holds_alternative<E>(option);
+	}
+	template <typename E>
+	bool Arg<E>::isUnk() const
+	{
+		auto p = std::get_if<NonOpt>(&option);
 		return p && *p == NonOpt::unknown_option;
 	}
 
 	template <typename E>
+	std::string Arg<E>::literal() const
+	{
+		if (!isLit())
+			throw std::logic_error(); //TODO
+		return *(std::string*)v;
+	}
+	template <typename E>
+	std::string& Arg<E>::literal()
+	{
+		if (!isLit())
+			throw std::logic_error(); //TODO
+		return *(std::string*)v;
+	}
+
+	template <typename E>
+	ErrorVal Arg<E>::parseErr() const
+	{
+		if (!isOpt() || !success)
+			throw std::logic_error(); //TODO
+		return *(ErrorVal*)v;
+	}
+		
+	template <typename E>
+	UnknownOption Arg<E>::unkOptErr() const
+	{
+		if (!isUnk())
+			throw std::logic_error(); //TODO
+		return *(UnknownOption*)v;
+	}
+
+	template <typename E>
 	operator bool(const Arg<E>& a)
-	{ return a.success && !isUnkOpt(a); }
+	{ return a.success && !a.isUnk(); }
 
 
 

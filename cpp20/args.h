@@ -4,19 +4,26 @@
 #include <filesystem>
 #include <functional>
 #include <variant>
+#include <map>
+#include <vector>
+
+/* TODO:
+ * Report error on final option with left-out arg
+ *
+ * `-hn 9` where h is flag and n takes arg ignores
+ * n
+ */
 
 
 namespace mcl::args {
-
-	template <typename E>
-	concept HasNone = requires {
-		{ E::none } -> std::same_as<E>;
-	};
 	template <typename F, typename R, typename... A>
 	concept Functional = requires (F f, A... as) {
 		{ f(as...) } -> std::same_as<R>;
 	};
 
+	using sv_citer = std::string_view::const_iterator;
+	using Reader = std::function<void*(const char*&)>;
+	using ShortOrLong = std::variant<char, std::string>;
 
 	enum class NonOpt {
 		none, //parse_error,
@@ -49,21 +56,18 @@ namespace mcl::args {
 	template <NonOpt e>
 	struct RealTypeS;
 	template<>
-	struct RealTypeS<NonOpt::none> { using type = std::string; }
+	struct RealTypeS<NonOpt::none> { using type = std::string; };
 	// template<>
-	// struct RealTypeS<NonOpt::parse_error> { using type = ErrorVal; }
+	// struct RealTypeS<NonOpt::parse_error> { using type = ErrorVal; };
 	template<>
-	struct RealTypeS<NonOpt::unknown_option> { using type = UnknownOption; }
+	struct RealTypeS<NonOpt::unknown_option> { using type = UnknownOption; };
 
 	template <NonOpt e>
 	using RealType = RealTypeS<e>::type;
 
 
-	using sv_citer = std::string_view::const_iterator;
-	using Reader = std::function<void*(const char*&)>;
-	using ShortOrLong = std::variant<char, std::string>;
 
-	template <HasNone E>
+	template <typename E>
 	std::vector<Arg<E>> parse(
 		const std::map<ShortOrLong, E>&,
 		const std::map<E, Reader>&,
@@ -78,7 +82,7 @@ namespace mcl::args {
 			auto out = new std::string;
 			while (*i)
 				out->push_back(*i++);
-			return (void*)out;
+			return out;
 		};
 
 		//TODO: Fix typename
@@ -86,7 +90,7 @@ namespace mcl::args {
 		Reader natural(unsigned short base = 6,
 				bool rtl = 0)
 		{
-			return [&](const char*& i) -> void* {
+			return [=](const char*& i) -> void* {
 				auto val = [&base](char c) -> unsigned short {
 					if ('0' <= c && c <= '9')
 						c -= '0';
@@ -104,16 +108,18 @@ namespace mcl::args {
 				{
 					int v = val(*i);
 					if (v == base)
-						return 0;
+						return out;
 
 					if (rtl)
 						(*out *= base) += v;
 					else
 					{
-						*out += v * place;
+						*out += place * v;
 						place *= base;
 					}
 				}
+
+				return out;
 			};
 		}
 	};
@@ -129,48 +135,56 @@ namespace mcl::args {
 		int argc, char const * const * argv,
 		bool doubleDashMeansLiterals
 	){
+		using Enum = std::variant<E, NonOpt>;
+
 		std::vector<Arg<E>> out;
 
-		auto doParse = [&out, &ps, &argv] -> const char* (E opt,
-				int i, const char* p = argv[i]){
+		auto doParse = [&out, &ps, &argv](E opt,
+				int i, const char** pp = 0) -> const char* {
+			auto p = pp ? *pp : argv[i];
+
 			if (ps.count(opt))
 			{
 				out.emplace_back(opt, 1, ps.at(opt)(p));
-				if (*p)
+				if (*p) //If parser did not eat all input
 				{
 					out.back().success = 0;
+					//TODO: Solve potential memory leak
+					/*
 					if (out.back().v)
 						delete out.back().v;
-					out.back().v = (void*)new ErrorVal{
+					*/
+					out.back().v = new ErrorVal{
 						i, argv[i], p - argv[i]
 					};
 					while (*p)
 						++p;
-					return p;
 				}
+				return p;
 			}
 			else
 			{
 				//No parser registered means boolean flag
 				//(no argument)
-				out.emplace_back(opt, 1, 0);
+				out.push_back({opt, 1, NULL});
 				return ++p;
 			}
 		};
 
 		auto pushFlag = [&out](E opt){
-			out.emplace_back(opt, 1, 0);
+			// out.emplace_back(opt, 1, NULL);
+			out.push_back({opt, 1, NULL});
 		};
 
 		auto literalStr = [&out](std::string&& str){
-			out.emplace_back(NonOpt::none, 1, (void*)new std::string{str});
+			out.emplace_back(NonOpt::none, 1, new std::string{str});
 		};
 
 
 		//State: Set to enum of previous flag, *if*
 		//such a flag was encountered, and takes an
 		//argument.
-		std::variant<E, NonOpt> next = NonOpt::none;
+		Enum next = NonOpt::none;
 
 		//State: Forces everything as literal argument
 		bool literals = 0;
@@ -180,9 +194,9 @@ namespace mcl::args {
 		for (int k = 1; k < argc; k++)
 		{
 			//Treating all as literals
-			if (literal)
+			if (literals)
 				literalStr(argv[k]);
-			else if (next == NonOpt::none) //Not impacted by a previous arg
+			else if (next == Enum{NonOpt::none}) //Not impacted by a previous arg
 			{
 				unsigned short dashes = 0;
 				const char* p = argv[k];
@@ -203,8 +217,8 @@ namespace mcl::args {
 						if (!names.count(*p))
 						{
 							out.emplace_back(
-									NonOpt::unknown_option, 0
-									(void*)new UnknownOption{
+									NonOpt::unknown_option, 0,
+									new UnknownOption{
 										k, argv[k], p - argv[k],
 										*p
 									}
@@ -214,7 +228,7 @@ namespace mcl::args {
 						{
 							E opt = names.at(*p++);
 							if (*p) //If there is more string:
-								p = doParse(opt, k, p);
+								p = doParse(opt, k, &p);
 							else if (ps.count(opt)) //If last was not a flag
 								next = opt;
 							else
@@ -244,11 +258,11 @@ namespace mcl::args {
 					// supplied option is a prefix, *if* there
 					// is only one such real option.
 					size_t longest = 0;
-					E* corrMatch = 0;
+					const E* corrMatch = 0;
 					bool extras = 0;
 					for (const auto& [lors, val] : names)
 					{
-						auto pLongOpt = std::get_if<std::string>(lors);
+						auto pLongOpt = std::get_if<std::string>(&lors);
 						if (pLongOpt &&
 								pLongOpt->starts_with(
 									std::string_view{start, p}
@@ -256,7 +270,7 @@ namespace mcl::args {
 						{
 							if (pLongOpt->size() == p - start)
 							{
-								longestMatch = pLongOpt->size();
+								longest = pLongOpt->size();
 								corrMatch = &val;
 								extras = 0;
 								break;
@@ -265,7 +279,7 @@ namespace mcl::args {
 								extras = 1;
 							else if (pLongOpt->size() >  longest)
 							{
-								longestMatch = *pLongOpt;
+								longest = pLongOpt->size();
 								corrMatch = &val;
 								extras = 0;
 							}
@@ -275,19 +289,21 @@ namespace mcl::args {
 					if (corrMatch && !extras)
 					{
 						if (equal)
-							doParse(*corrMatch, k, ++p);
+							doParse(*corrMatch, k, &++p);
 						else if (ps.count(*corrMatch))
 							next = *corrMatch;
 						else
 							pushFlag(*corrMatch);
 					}
 				} break;
+				}
 			}
-			//If this should be the argument to an
-			//option
 			else
 				doParse(std::get<E>(next), k);
 		}
+
+
+		return out;
 	}
 }
 

@@ -195,8 +195,8 @@ namespace mcl::args {
 			if (ps.count(opt))
 			{
 				out.emplace_back(opt, 1, ps.at(opt)(p));
-				if (*p) //If parser did not eat all input
-				{
+				if (*p || !out.back().v) //If parser did not eat all input
+				{                        //or if parser returned fail
 					out.back().success = 0;
 					//TODO: Solve potential memory leak
 					/*

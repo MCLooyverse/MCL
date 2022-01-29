@@ -67,9 +67,21 @@ namespace mcl::args {
 		E& opt();
 
 		template <typename T>
-		T as() const;
+		T as() const
+		{
+			if (!isOpt() || !success)
+				throw std::logic_error("TODO");
+			return *(T*)v;
+		}
 		template <typename T>
-		T& as();
+		T& as()
+		{
+			if (!isOpt() || !success)
+				throw std::logic_error("TODO");
+			return *(T*)v;
+		}
+
+		operator bool() const;
 	};
 
 	template <NonOpt e>
@@ -165,13 +177,7 @@ namespace mcl::args {
 				std::filesystem::file_type type =
 				std::filesystem::file_type::regular)
 		{
-			throw 1;
-
-
 			namespace fs = std::filesystem;
-
-			if (exist != -1 && exist != 0 && exist != 1)
-				throw std::domain_error("TODO"); //TODO
 
 			switch (type)
 			{
@@ -184,6 +190,29 @@ namespace mcl::args {
 			if (flags & O_RDONLY == O_RDONLY &&
 					exist != 1) //TODO: questionable.
 				throw std::domain_error("TODO"); //TODO
+
+
+			switch (exist)
+			{
+				case -1: throw 1;
+				case 0: throw 1;
+				case 1:
+					return [=](const char*& i) -> void* {
+						fs::path p{helper::consume_string(i)};
+
+						if (type == fs::file_type::unknown && fs::exists(p) ||
+								type == fs::status(p).type())
+						{
+							auto i = new int{open(p.c_str(), flags)};
+							if (*i == -1)
+								return 0;
+						}
+						else
+							return 0;
+					};
+				default:
+					throw std::domain_error("TODO"); //TODO
+			}
 		}
 
 
@@ -201,9 +230,45 @@ namespace mcl::args {
 				default: break;
 			}
 
-			return [=](const char*& i){
+			return [=](const char*& i) -> void* {
 				auto p = new fs::path{helper::consume_string(i)};
 				if (type == fs::file_type::unknown && fs::exists(*p) ||
+						type == fs::status(*p).type())
+					return p;
+				delete p;
+				return NULL;
+			};
+		}
+
+		//returns T
+		template <typename T>
+		Reader keyword(std::map<std::string, T> kws, bool exact = 0)
+		{
+			if (exact)
+				return [=](const char*& i){
+			return [=](const char*& i){
+				auto start = i, end = i;
+				while (*end) ++end;
+
+				for (auto& [k, t] : kws)
+		//Return fs::path
+		Reader ftypeOrNexist(std::filesystem::file_type type =
+				std::filesystem::file_type::unknown) //unknown means any
+		{
+			namespace fs = std::filesystem;
+
+			switch (type)
+			{
+				case fs::file_type::none:
+				case fs::file_type::not_found:
+					throw std::domain_error("TODO"); //TODO
+				default: break;
+			}
+
+			return [=](const char*& i) -> void* {
+				auto p = new fs::path{helper::consume_string(i)};
+				if (type == fs::file_type::unknown && fs::exists(*p) ||
+						fs::status(*p).type() == fs::file_type::not_found ||
 						type == fs::status(*p).type())
 					return p;
 				delete p;
@@ -279,24 +344,9 @@ namespace mcl::args {
 	}
 
 
-	template <typename E, typename T>
-	T Arg<E>::as<T>() const
-	{
-		if (!isOpt() || !success)
-			throw std::logic_error();
-		return *(T*)v;
-	}
-	template <typename E, typename T>
-	T& Arg<E>::as<T>()
-	{
-		if (!isOpt() || !success)
-			throw std::logic_error();
-		return *(T*)v;
-	}
-
 	template <typename E>
-	operator bool(const Arg<E>& a)
-	{ return a.success && !a.isUnk(); }
+	Arg<E>::operator bool() const
+	{ return success && !isUnk(); }
 
 
 

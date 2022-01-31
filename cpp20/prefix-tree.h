@@ -172,6 +172,51 @@ namespace mcl
 			else
 				throw std::logic_error("TODO");
 		}
+
+
+		//Fetch child at least depth with value.
+		//Return 0 if multiple exist at equal least depth.
+		PrefixTree<K, T>* nearestValued(size_t* found = 0)
+		{
+			size_t& mindepth = found ? *found : *new size_t;
+			mindepth = 0;
+
+			if (val)
+			{
+				if (!found)
+					delete &mindepth;
+				return val;
+			}
+
+			PrefixTree<K, T>* match = 0;
+			for (auto& [k, tr] : children)
+			{
+				size_t depth;
+				auto x = tr.nearestValued(&depth);
+				if (x)
+				{
+					++depth;
+					if (depth == mindepth)
+					{
+						if (!found)
+							delete &mindepth;
+						return 0;
+					}
+					if (depth < mindepth)
+					{
+						mindepth = depth;
+						match = x;
+					}
+				}
+			}
+			
+			if (!found)
+				delete &mindepth;
+			return match;
+		}
+
+		const PrefixTree<K, T>* nearestValue(bool checkEqDepth) const
+		{
 	};
 }
 

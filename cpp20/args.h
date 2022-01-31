@@ -7,6 +7,8 @@
 #include <map>
 #include <vector>
 
+#include "../prefix-tree.h"
+
 /* TODO:
  * Report error on final option with left-out arg
  *
@@ -242,20 +244,66 @@ namespace mcl::args {
 
 		//returns T
 		template <typename T>
-		Reader keyword(std::map<std::string, T> kws, bool exact = 0)
+		Reader keyword(const PrefixTree<char, T>& kws, bool exact = 0, bool minMunch = 0)
 		{
-			if (exact)
-				return [=](const char*& i){
-					auto st = i;
-					for (auto mview = ; *i;
+			if (exact && minMunch)
+				return [kws](const char*& i){
+					auto tree = &kws;
+					auto start = i;
+					while (*i && tree->has(*i))
+					{
+						tree = tree->travel(*i++);
+						if (tree->hasValue())
+							return new T{tree->value()};
+					}
 
-			return [=](const char*& i){
-				auto start = i, end = i;
-				while (*end) ++end;
+					i = start;
+					return 0;
+				};
+			if (exact) //max munch
+				return [kws](const char*& i){
+					auto tree = &kws;
+					auto afterlast = i;
+					const T* match = 0;
+					while (*i && tree->has(*i))
+					{
+						tree = tree->travel(*i++);
+						if (tree->hasValue())
+						{
+							afterlast = i;
+							match = &tree->value();
+						}
+					}
 
-				for (auto& [k, t] : kws)
+					i = afterlast;
+					if (match)
+						match = new T{*match};
+					return match;
+				};
+			//inexact
+			return [kws](const char*& i){
+				auto tree = &kws;
+				auto start = i;
+				while (*i && tree->has(*i))
+				{
+					tree = tree->travel(*i++);
+					if (tree->hasValue())
+						return new T{tree->value()};
+				}
 
+				if (*i)
+				{
+					i = start;
+					return 0;
+				}
 
+				tree = tree->nearestValued();
+				if (tree)
+					return new T{tree->value()};
+
+				i = start;
+				return 0;
+			};
 		}
 
 

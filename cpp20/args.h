@@ -60,7 +60,7 @@ namespace mcl::args {
 		std::string& literal();
 
 		ErrorVal parseErr() const;
-		
+
 		UnknownOption unkOptErr() const;
 
 		E opt() const;
@@ -246,11 +246,19 @@ namespace mcl::args {
 		{
 			if (exact)
 				return [=](const char*& i){
+					auto st = i;
+					for (auto mview = ; *i;
+
 			return [=](const char*& i){
 				auto start = i, end = i;
 				while (*end) ++end;
 
 				for (auto& [k, t] : kws)
+
+
+		}
+
+
 		//Return fs::path
 		Reader ftypeOrNexist(std::filesystem::file_type type =
 				std::filesystem::file_type::unknown) //unknown means any
@@ -319,7 +327,7 @@ namespace mcl::args {
 			throw std::logic_error("TODO"); //TODO
 		return *(ErrorVal*)v;
 	}
-		
+
 	template <typename E>
 	UnknownOption Arg<E>::unkOptErr() const
 	{

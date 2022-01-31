@@ -50,6 +50,9 @@ namespace mcl
 	template <typename R, typename T>
 	concept RangeOf = std::ranges::range<R> &&
 		std::same_as<std::ranges::range_value_t<R>, T>;
+	template <typename R, typename T>
+	concept ViewableRangeOf = std::ranges::viewable_range<R> &&
+		std::same_as<std::ranges::range_value_t<R>, T>;
 
 	template <typename T, typename U>
 	concept CanConstruct = std::constructible_from<U, T>;

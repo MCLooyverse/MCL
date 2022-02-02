@@ -102,7 +102,8 @@ namespace mcl::args {
 
 	template <typename E>
 	std::vector<Arg<E>> parse(
-		const std::map<ShortOrLong, E>&,
+		const PrefixTree<char, E>& longs,
+		const std::map<char, E>& shorts,
 		const std::map<E, Reader>&,
 		int, char const * const *,
 		bool doubleDashMeansLiterals = 1
@@ -244,7 +245,8 @@ namespace mcl::args {
 
 		//returns T
 		template <typename T>
-		Reader keyword(const PrefixTree<char, T>& kws, bool exact = 0, bool minMunch = 0)
+		Reader keyword(const PrefixTree<char, T>& kws,
+				bool exact = 0, bool minMunch = 0)
 		{
 			if (exact && minMunch)
 				return [kws](const char*& i){
@@ -410,7 +412,9 @@ namespace mcl::args {
 
 	template <typename E>
 	std::vector<Arg<E>> parse(
-		const std::map<ShortOrLong, E>& names,
+		//const std::map<ShortOrLong, E>& names,
+		const PrefixTree<char, E>& longs,
+		const std::map<char, E>& shorts,
 		const std::map<E, Reader>& ps,
 		int argc, char const * const * argv,
 		bool doubleDashMeansLiterals
@@ -494,7 +498,7 @@ namespace mcl::args {
 				case 1:
 					while (*p)
 					{
-						if (!names.count(*p))
+						if (!shorts.count(*p))
 						{
 							out.emplace_back(
 									NonOpt::unknown_option, 0,
@@ -506,7 +510,7 @@ namespace mcl::args {
 						}
 						else
 						{
-							E opt = names.at(*p++);
+							E opt = shorts.at(*p++);
 							if (*p) //If there is more string:
 								p = doParse(opt, k, &p);
 							else if (ps.count(opt)) //If last was not a flag
@@ -517,64 +521,56 @@ namespace mcl::args {
 					}
 					break;
 				case 2: {
+					// This behavior is a little interesting.  Basically, it
+					// picks the shortest real option for which the supplied
+					// option is a prefix, *if* there is only one such real
+					// option.  (Includes exact match)
+
 					auto start = p;
-					bool equal = 0;
-					for(;;)
+					bool equals = 0;
+					for (auto tree = &longs; *p; p++)
 					{
 						if (*p == '=')
 						{
-							equal = 1;
-							break;
-						}
-						else if (*p)
+							equals = 1;
 							++p;
-						else
 							break;
-					}
+						}
 
-					// This behavior is a little interesting.
-					// Basically, it picks an exact match,
-					// or the longest real option for which the
-					// supplied option is a prefix, *if* there
-					// is only one such real option.
-					size_t longest = 0;
-					const E* corrMatch = 0;
-					bool extras = 0;
-					for (const auto& [lors, val] : names)
-					{
-						auto pLongOpt = std::get_if<std::string>(&lors);
-						if (pLongOpt &&
-								pLongOpt->starts_with(
-									std::string_view{start, p}
-								))
+						if (tree->has(*p))
+							tree = tree->travel(*p);
+						else
 						{
-							if (pLongOpt->size() == p - start)
-							{
-								longest = pLongOpt->size();
-								corrMatch = &val;
-								extras = 0;
-								break;
-							}
-							else if (pLongOpt->size() == longest)
-								extras = 1;
-							else if (pLongOpt->size() >  longest)
-							{
-								longest = pLongOpt->size();
-								corrMatch = &val;
-								extras = 0;
-							}
+							out.emplace_back(
+									NonOpt::unknown_option, 0,
+									new UnknownOption{
+										k, argv[k], p - argv[k],
+										*p
+									}
+								);
+							break;
 						}
 					}
 
-					if (corrMatch && !extras)
+					if (!equals && *p)
+						break;
+
+					tree = tree.nearestValued();
+					if (tree)
 					{
-						if (equal)
-							doParse(*corrMatch, k, &++p);
-						else if (ps.count(*corrMatch))
-							next = *corrMatch;
+						if (equals)
+							doParse(tree->value(), k, &p);
 						else
-							pushFlag(*corrMatch);
+							next = tree->value();
 					}
+					else
+						out.emplace_back(
+								NonOpt::unknown_option, 0,
+								new UnknownOption{
+									k, argv[k], p - argv[k],
+									*p
+								}
+							);
 				} break;
 				}
 			}

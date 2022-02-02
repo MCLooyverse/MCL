@@ -120,6 +120,21 @@ namespace mcl
 					tr->val = new T{v};
 			}
 		}
+		template <RangeOf<K> KS>
+		PrefixTree(const std::initializer_list<std::pair<KS, T>>& r)
+			: children{}, val{0}
+		{
+			for (const auto& [k, v] : r)
+			{
+				auto tr = this;
+				for (const auto& e : k)
+					tr = &tr->children[e];
+				if (tr->val)
+					*(tr->val) = v;
+				else
+					tr->val = new T{v};
+			}
+		}
 
 
 		~PrefixTree()

@@ -205,12 +205,48 @@ namespace mcl::strmanip
 		else
 			return sign + NtoS(n, no);
 	}
+
+
+
+	std::string trim(const std::string& s)
+	{
+		auto i = s.begin(), e = s.end();
+		while (i != e && std::isspace(*i))
+			++i;
+		while (i != e && std::isspace(e[-1]))
+			--e;
+
+		return {i, e};
+	}
+
+	std::string ensurePrintable(char c, bool escback = 1)
+	{
+		switch (c)
+		{
+			case '\\': return escback ? "\\\\" : "\\";
+			case '\a': return "\\a";
+			case '\b': return "\\b";
+			case '\x1B': return "\\e";
+			case '\f': return "\\f";
+			case '\n': return "\\n";
+			case '\r': return "\\r";
+			case '\t': return "\\t";
+			case '\v': return "\\v";
+		}
+
+		if (std::isprint(c))
+			return std::string{1, c};
+		else
+			return std::string{{ '\\', 'x', digits[ c & 15 ], digits[ c >> 4 ] }};
+	}
 }
 
 namespace mcl {
 	using strmanip::NtoS;
 	using strmanip::ItoS;
 	using strmanip::hexPair;
+	using strmanip::trim;
+	using strmanip::ensurePrintable;
 }
 
 

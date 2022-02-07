@@ -245,6 +245,7 @@ namespace mcl::strmanip
 		std::string out;
 		for (char c : s)
 			out += ensurePrintable(c, escback);
+		return out;
 	}
 }
 

@@ -7,6 +7,8 @@
 #include <map>
 #include <vector>
 
+#include <fcntl.h>
+
 #include "../prefix-tree.h"
 
 /* TODO:
@@ -81,6 +83,13 @@ namespace mcl::args {
 			if (!isOpt() || !success)
 				throw std::logic_error("TODO");
 			return *(T*)v;
+		}
+		template <typename T>
+		void deleteAs()
+		{
+			if (v)
+				delete (T*)v;
+			v = 0;
 		}
 
 		operator bool() const;
@@ -249,7 +258,7 @@ namespace mcl::args {
 				bool exact = 0, bool minMunch = 0)
 		{
 			if (exact && minMunch)
-				return [kws](const char*& i){
+				return [kws](const char*& i) -> void* {
 					auto tree = &kws;
 					auto start = i;
 					while (*i && tree->has(*i))
@@ -263,7 +272,7 @@ namespace mcl::args {
 					return 0;
 				};
 			if (exact) //max munch
-				return [kws](const char*& i){
+				return [kws](const char*& i) -> void* {
 					auto tree = &kws;
 					auto afterlast = i;
 					const T* match = 0;
@@ -279,11 +288,11 @@ namespace mcl::args {
 
 					i = afterlast;
 					if (match)
-						match = new T{*match};
-					return match;
+						return new T{*match};
+					return 0;
 				};
 			//inexact
-			return [kws](const char*& i){
+			return [kws](const char*& i) -> void* {
 				auto tree = &kws;
 				auto start = i;
 				while (*i && tree->has(*i))
@@ -528,7 +537,8 @@ namespace mcl::args {
 
 					auto start = p;
 					bool equals = 0;
-					for (auto tree = &longs; *p; p++)
+					auto tree = &longs;
+					for ( ; *p; p++)
 					{
 						if (*p == '=')
 						{
@@ -578,6 +588,13 @@ namespace mcl::args {
 				doParse(std::get<E>(next), k);
 		}
 
+
+		if (next != Enum{NonOpt::none})
+		{
+			out.emplace_back(
+					next, 0, 0
+				);
+		}
 
 		return out;
 	}

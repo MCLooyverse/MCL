@@ -239,6 +239,13 @@ namespace mcl::strmanip
 		else
 			return std::string{{ '\\', 'x', digits[ c & 15 ], digits[ c >> 4 ] }};
 	}
+
+	std::string ensurePrintable(std::string s, bool escback = 1)
+	{
+		std::string out;
+		for (char c : s)
+			out += ensurePrintable(c, escback);
+	}
 }
 
 namespace mcl {

@@ -224,14 +224,50 @@ namespace mcl
 					}
 				}
 			}
-			
+
 			if (!found)
 				delete &mindepth;
 			return match;
 		}
 
-		const PrefixTree<K, T>* nearestValue(bool checkEqDepth) const
+		const PrefixTree<K, T>* nearestValued(size_t* found = 0) const
 		{
+			size_t& mindepth = found ? *found : *new size_t;
+			mindepth = 0;
+
+			if (val)
+			{
+				if (!found)
+					delete &mindepth;
+				return val;
+			}
+
+			const PrefixTree<K, T>* match = 0;
+			for (auto& [k, tr] : children)
+			{
+				size_t depth;
+				auto x = tr.nearestValued(&depth);
+				if (x)
+				{
+					++depth;
+					if (depth == mindepth)
+					{
+						if (!found)
+							delete &mindepth;
+						return 0;
+					}
+					if (depth < mindepth)
+					{
+						mindepth = depth;
+						match = x;
+					}
+				}
+			}
+
+			if (!found)
+				delete &mindepth;
+			return match;
+		}
 	};
 }
 

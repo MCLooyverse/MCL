@@ -14,6 +14,10 @@ namespace mcl
 	std::string& rtrim(std::string&, const std::string& ws = " \t\r\n");
 	std::string& ltrim(std::string&, const std::string& ws = " \t\r\n");
 
+	std::string_view& trim(std::string_view&, const std::string& ws = " \t\r\n");
+	std::string_view& rtrim(std::string_view&, const std::string& ws = " \t\r\n");
+	std::string_view& ltrim(std::string_view&, const std::string& ws = " \t\r\n");
+
 	std::string_view trimmed(const std::string&, const std::string& ws = " \t\r\n");
 	std::string_view rtrimmed(const std::string&, const std::string& ws = " \t\r\n");
 	std::string_view ltrimmed(const std::string&, const std::string& ws = " \t\r\n");
@@ -26,6 +30,10 @@ namespace mcl
 
 
 	std::string& trim(std::string& s, const std::string& ws)
+	{
+		return ltrim(rtrim(s, ws), ws);
+	}
+	std::string_view& trim(std::string_view& s, const std::string& ws)
 	{
 		return ltrim(rtrim(s, ws), ws);
 	}
@@ -43,6 +51,20 @@ namespace mcl
 		return s;
 	}
 	std::string& ltrim(std::string& s, const std::string& ws)
+	{
+		size_t i = 0;
+		while (ws.find(s[i]))
+			++i;
+
+		return s.erase(0, i);
+	}
+	std::string_view& rtrim(std::string_view& s, const std::string& ws)
+	{
+		while (ws.find(s.back()) != std::string::npos)
+			s.remove_suffix(1);
+		return s;
+	}
+	std::string_view& ltrim(std::string_view& s, const std::string& ws)
 	{
 		size_t i = 0;
 		while (ws.find(s[i]))

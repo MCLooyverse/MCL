@@ -20,7 +20,9 @@ module NewPrelude (
   Eq((==),(!=)),
   Ord((<),(!<),(>),(!>),compare,max,min),
 
-  Callable((∘), ($)),
+  Show(show),
+
+  --Callable((∘), ($)),
   Truþy(test),
   Tagger(unwrap),
   Foldable(mapFold),
@@ -29,16 +31,20 @@ module NewPrelude (
 
   Bool(True,False), Char, Int, Integer,
   𝔹, 𝕋(NEG,ZRO,POS), ℕ(Zero, Succ),
-  Σ(Σ), Π(Π),
-  Any(Any), All(All),
-  Id(Id),
+  Σ(..), Π(..),
+  Any(..), All(..),
+  Id(..), Const(..),
   Maybe(Noþiŋ, Just),
   Eiðer(Left, Riȝt),
-  Lens(Lens),
+  Lens,
+  Lens',
 
   Striŋ,
 
   IO,
+
+
+  (∘), ($),
 
   (>>),
 
@@ -48,6 +54,7 @@ module NewPrelude (
   not,
   ($>),
   liftOp,
+  distr,
   unjust,
 
   fold,
@@ -60,6 +67,15 @@ module NewPrelude (
   fst, lfst, snd, lsnd, dup,
 
   get, set, ovr,
+  lens,
+  idlens,
+
+  curry, uncurry,
+  swap,
+
+  maybe, eiðer,
+
+  createMain,
 
   undefined,
 
@@ -76,6 +92,8 @@ import Prelude (
   Int(..), Integer(..),
   IO,
 
+  Show(show),
+
   undefined
   )
 import qualified Prelude as OldP (
@@ -84,10 +102,11 @@ import qualified Prelude as OldP (
   (>>=),
   (+), (-), (*), (/),
   Num(..),
-  (==), (<),
-
-  Show(..)
+  Eq(..),
+  (==), (<)
   )
+import qualified System.Exit (exitWith, ExitCode(..))
+import System.Environment(getArgs, getProgName)
 
 
 
@@ -142,11 +161,13 @@ type Field a = (  Riŋ a, Group (Π a))
 --Beware, `inv zero` is probably `undefined`
 
 
+{-
 infixl 0 $
 infixl 9 ∘
 class Callable f where
   ($) :: a -> f a b -> b
   (∘) :: f a b -> f b c -> f a c
+-}
 
 
 infix 4 ==
@@ -187,7 +208,7 @@ class Truþy t where
   test :: t -> 𝔹
 
 
-class Applicative t => Tagger t where
+class Monad t => Tagger t where
   unwrap :: t a -> a
 
 {-
@@ -207,24 +228,26 @@ data 𝕋 = NEG | ZRO | POS
 data ℕ = Zero | Succ ℕ
 type ℤ = Integer
 
-data Σ a = Σ a
-data Π a = Π a
+newtype Σ a = Σ { unΣ :: a } deriving Show
+newtype Π a = Π { unΠ :: a } deriving Show
 
-data All a = All a
-data Any a = Any a
+newtype All a = All { unAll :: a } deriving Show
+newtype Any a = Any { unAny :: a } deriving Show
 
-data Id a = Id a
+newtype Id a = Id { unId :: a } deriving Show
+newtype Const a b = Const { unConst :: a } deriving Show
 
-data Maybe a = Noþiŋ | Just a
+data Maybe a = Noþiŋ | Just a deriving Show
 
-data Eiðer a b = Left a | Riȝt b
+data Eiðer a b = Left a | Riȝt b deriving Show
 
 -- data [] a = a : [a] | []
 
 type Striŋ = [Char]
 
-newtype Lens r a = Lens { getLens :: forall f. Functor f =>
-  (a -> f a) -> r -> f r }
+--type Lens r a = forall f. Functor f => (a -> f a) -> r -> f r
+type Lens' r r' a a' = forall f. Functor f => (a -> f a') -> r -> f r'
+type Lens r a = Lens' r r a a
 
 
 
@@ -273,6 +296,14 @@ instance Πable 𝕋 where
 
 instance Truþy 𝕋 where
   test = (ZRO !=)
+
+
+
+instance Eq Char where
+  (==) = (OldP.==)
+instance Ord Char where
+  (<) = (OldP.<)
+
 
 
 instance Eq ℕ where
@@ -346,6 +377,8 @@ instance Truþy Int where
 
 
 
+
+
 instance Eq a => Eq (Σ a) where
   (Σ a) == (Σ b) = a == b
 instance Ord a => Ord (Σ a) where
@@ -364,8 +397,10 @@ instance Functor Σ where
 instance Applicative Σ where
   pure = Σ
   (Σ a) <$> (Σ f) = Σ (f a)
+instance Monad Σ where
+  join = unΣ
 instance Tagger Σ where
-  unwrap (Σ a) = a
+  unwrap = unΣ
 
 
 
@@ -387,13 +422,12 @@ instance Functor Π where
 instance Applicative Π where
   pure = Π
   (Π a) <$> (Π f) = Π (f a)
+instance Monad Π where
+  join = unΠ
 instance Tagger Π where
-  unwrap (Π a) = a
+  unwrap = unΠ
 
 
-
-instance Tagger All where
-  unwrap (All a) = a
 
 instance Eq a => Eq (All a) where
   (All a) == (All b) = a == b
@@ -413,11 +447,12 @@ instance Functor All where
 instance Applicative All where
   pure = All
   (All a) <$> (All f) = All (f a)
+instance Monad All where
+  join = unAll
+instance Tagger All where
+  unwrap = unAll
 
 
-
-instance Tagger Any where
-  unwrap (Any a) = a
 
 instance Eq a => Eq (Any a) where
   (Any a) == (Any b) = a == b
@@ -437,6 +472,10 @@ instance Functor Any where
 instance Applicative Any where
   pure = Any
   (Any a) <$> (Any f) = Any (f a)
+instance Monad Any where
+  join = unAny
+instance Tagger Any where
+  unwrap = unAny
 
 
 
@@ -450,6 +489,18 @@ instance Monad Id where
 
 instance Tagger Id where
   unwrap (Id a) = a
+
+instance Eq a => Eq (Id a) where
+  Id a == Id b = a == b
+
+
+
+instance Functor (Const a) where
+  map = const (unConst ∘ Const)
+
+
+instance Eq a => Eq (Const a b) where
+  Const a == Const b = a == b
 
 
 instance Functor Maybe where
@@ -479,7 +530,14 @@ instance Foldable Maybe where
   mapFold f (Just a) = f a
 
 
+instance Eq a => Eq (Maybe a) where
+  Noþiŋ == Noþiŋ = True
+  Just a == Just b = a == b
+  _ == _ = False
 
+
+
+{-
 instance Callable Lens where
   -- Lens a b -> Lens b c -> Lens a c
   -- ((b -> f b) -> a -> f a) ->
@@ -487,6 +545,7 @@ instance Callable Lens where
   -- ((c -> f c) -> a -> f a)
   Lens l ∘ Lens m = Lens (m ∘ l)
   r $ Lens l = r $ l dup ∘ fst
+-}
 
 
 
@@ -496,10 +555,18 @@ instance Semigroup (a -> a) where
 instance Monoid (a -> a) where
   id a = a
 
+{-
 instance Callable (->) where
   (f ∘ g) a = g (f a)
   a $ f     = f a
+-}
 
+
+
+instance Semigroup [a] where
+  (<>) = (+)
+instance Monoid [a] where
+  id = []
 
 instance Functor [] where
   map f [] = []
@@ -571,16 +638,33 @@ instance Monoid a => Monoid (IO a) where
 
 {- VALUES -}
 
+
+maybe :: b -> (a -> b) -> Maybe a -> b
+maybe b f Noþiŋ = b
+maybe b f (Just a) = f a
+
+eiðer :: (a -> c) -> (b -> c) -> Eiðer a b -> c
+eiðer f g (Left a) = f a
+eiðer f g (Riȝt b) = g b
+
+
+infixl 9 ∘
+(∘) :: (a -> b) -> (b -> c) -> a -> c
+(f ∘ g) a = g (f a)
+infixr 0 $
+($) :: a -> (a -> b) -> b
+a $ f = f a
+
 (>>) :: Monad m => m a -> m b -> m b
 ma >> mb = ma >>= const mb
 
-infix 0 ?
+infix 1 ?
 (?) :: Truþy t => a -> a -> t -> a
 a ? b = test ∘ helper
   where helper False = a
         helper True  = b
 
-infix 0 ??
+infix 1 ??
 (??) :: Truþy t => a -> b -> t -> Eiðer a b
 a ?? b = Left a ? Riȝt b
 
@@ -603,9 +687,23 @@ not = test ∘ not'
 liftOp :: Applicative f => (a -> b -> c) -> (f a -> f b -> f c)
 liftOp op fa fb = fb <$> (fa $> op)
 
+
+infixr 6 ><
+(><) :: Group a => a -> a -> a
+(><) = inv ∘ (<>)
+
+infixl 7 <^>
+(<^>) :: Monoid a => a -> ℕ -> a
+a <^> Zero = id
+a <^> (Succ n) = a <> a <^> n
+
 infixr 5 $>
 ($>) :: Functor f => f a -> (a -> b) -> f b
 a $> f = map f a
+
+-- f (b^a) -> (f b)^(f a)
+distr :: Applicative f => f (a -> b) -> f a -> f b
+distr = swap (<$>)
 
 
 lowerFunc :: Tagger t => (t a -> t b) -> a -> b
@@ -654,25 +752,52 @@ const a b = a
 fst :: (a, b) -> a
 fst (a, _) = a
 
-lfst :: Lens (a, b) a
-lfst = Lens (\a2fa (a, b) -> a2fa a $> \a' -> (a', b))
+lens :: (r -> a) -> (r -> a' -> r') -> Lens' r r' a a'
+lens g s f r = f (g r) $> (s r)
+
+
+idlens :: Lens r r
+idlens = id
+
+lfst :: Lens' (a, c) (d, c) a d
+--lfst = Lens (\a2fa (a, b) -> a2fa a $> \a' -> (a', b))
+lfst = lens fst (\(_, b) a -> (a, b))
 
 snd :: (a, b) -> b
 snd (_, b) = b
 
-lsnd :: Lens (a, b) b
-lsnd = Lens (\b2fb (a, b) -> b2fb b $> \b' -> (a, b'))
+lsnd :: Lens' (a, b) (a, c) b c
+--lsnd = Lens (\b2fb (a, b) -> b2fb b $> \b' -> (a, b'))
+lsnd = lens snd (\(a, _) b -> (a, b))
 
 dup :: a -> (a, a)
 dup    a =  (a, a)
 
 get :: Lens r a -> r -> a
 set :: Lens r a -> a -> r -> r
-ovr :: Lens r a -> (a -> a) -> r -> r
+ovr :: Lens' r r' a a' -> (a -> a') -> r -> r'
 
-get (Lens l) = l dup ∘ fst
-set (Lens l) a = l (const (Id a)) ∘ unwrap
-ovr (Lens l) f = l (f ∘ Id) ∘ unwrap
+get l   = l Const          ∘ unConst
+set l a = l (const (Id a)) ∘ unId
+ovr l f = l (f ∘ Id)       ∘ unId
+
+
+exitWith :: Int -> IO ()
+exitWith 0 = System.Exit.exitWith System.Exit.ExitSuccess
+exitWith n = System.Exit.exitWith (System.Exit.ExitFailure n)
+
+createMain :: ([Striŋ] -> IO Int) -> IO ()
+createMain f = (getArgs <$> getProgName $> (:)) >>= f >=> exitWith
+
+
+curry :: ((a, b) -> c) -> a -> b -> c
+curry f a b = f (a, b)
+
+uncurry :: (a -> b -> c) -> (a, b) -> c
+uncurry f (a, b) = f a b
+
+swap :: (a -> b -> c) -> b -> a -> c
+swap f b a = f a b
 
 
 
@@ -681,9 +806,9 @@ ovr (Lens l) f = l (f ∘ Id) ∘ unwrap
 {- Prelude/GHCI compatibilty -}
 {-----------------------------}
 
-instance OldP.Show ℕ where
+instance Show ℕ where
   show Zero = "0"
-  show n = n $ divmod6 ∘ unjust ∘ \(q, r) -> digit r : ("" ? OldP.show q) q
+  show n = n $ divmod6 ∘ unjust ∘ \(q, r) -> digit r : ("" ? show q) q
     where divmod6 a = case diff 6 a of
             Noþiŋ  -> Just (Zero, a)
             Just δ -> map (ovr lfst Succ) (divmod6 δ)
@@ -693,3 +818,6 @@ instance OldP.Show ℕ where
           diff _        _ = Noþiŋ
           getfrom (a:as) Zero = a
           getfrom (a:as) (Succ i) = getfrom as i
+
+instance OldP.Eq ℕ where
+  (==) = (==)
